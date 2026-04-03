@@ -18,6 +18,18 @@ brand:
     - name: "Product Two"
       description: "What product two does"
 
+geotargeting:
+  enabled: false                   # Set to true for location-based businesses
+  intent: "PRESENCE"               # "PRESENCE" = people IN the area (recommended for local)
+                                   # "PRESENCE_OR_INTEREST" = people in OR interested in the area
+  radius:                          # Radius targeting — best for single-location businesses
+    label: "My City"               # Human-readable label
+    lat: 0.0                       # Latitude of center point
+    lng: 0.0                       # Longitude of center point
+    miles: 50                      # Radius in miles
+  locations: []                    # Named location targeting — alternative to radius
+                                   # e.g. ["Bristol, Tennessee", "Bristol, Virginia"]
+
 benchmarks:
   ctr_min: 0.03                   # 3% — flag campaigns below this CTR
   cpc_max: 8.00                   # $8.00 — flag campaigns above this avg CPC

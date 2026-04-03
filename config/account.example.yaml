@@ -1,0 +1,57 @@
+# Google Ads Account Configuration
+# Copy this file to account.yaml and customize for your account.
+# account.yaml is gitignored — never commit your real config.
+
+account:
+  id: "123-456-7890"              # Your Google Ads customer ID (with hyphens)
+  id_numeric: "1234567890"        # Same ID without hyphens (used for API calls)
+  name: "My Company"              # Human-readable account name
+
+brand:
+  name: "My Company"              # Full brand name for ad copy
+  short_name: "MyBrand"           # Short name for tight headlines
+  forbidden_names:                # Names to NEVER use in ad copy
+    - "OldBrandName"
+  products:                       # Your product lines (used for campaign-specific copy)
+    - name: "Product One"
+      description: "What product one does"
+    - name: "Product Two"
+      description: "What product two does"
+
+benchmarks:
+  ctr_min: 0.03                   # 3% — flag campaigns below this CTR
+  cpc_max: 8.00                   # $8.00 — flag campaigns above this avg CPC
+  conversion_rate_min: 0.02       # 2% — flag campaigns below this conversion rate
+  quality_score_min: 6            # Flag keywords below this quality score
+  impression_share_min: 0.60      # 60% — flag campaigns below this impression share
+  cost_per_conversion_max: 50.00  # $50 — flag campaigns above this cost/conversion
+
+ad_copy:
+  headline_max_chars: 30          # Google Ads RSA headline limit
+  description_max_chars: 90       # Google Ads RSA description limit
+  path_max_chars: 15              # Google Ads display URL path limit
+  min_headlines: 3                # Minimum headlines per RSA
+  max_headlines: 15               # Maximum headlines per RSA
+  min_descriptions: 2             # Minimum descriptions per RSA
+  max_descriptions: 4             # Maximum descriptions per RSA
+  forbidden_phrases:              # Phrases to never use in ad copy
+    - "free trial"
+    - "request a demo"
+    - "talk to sales"
+  preferred_ctas:                 # CTAs that match your brand voice
+    - "Start free"
+    - "Try it today"
+    - "Get started"
+  required_mentions: []           # Phrases to include wherever space allows
+    # - "No credit card required"
+
+reporting:
+  format: "markdown"
+  output_dir: "reports"
+  date_ranges:
+    - label: "Last 7 days"
+      days: 7
+    - label: "Last 30 days"
+      days: 30
+    - label: "Last 90 days"
+      days: 90

@@ -1,0 +1,8 @@
+# Core
+pyyaml>=6.0
+
+# Google Ads API (optional — CSV mode works without this)
+google-ads>=24.0.0
+
+# Development
+pytest>=7.0

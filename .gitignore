@@ -1,0 +1,30 @@
+# Credentials and account config — NEVER commit
+config/credentials.yaml
+config/account.yaml
+config/brand-voice.md
+config/campaigns.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Reports and data (generated, not tracked)
+reports/*.md
+data/imports/*.csv
+data/exports/*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

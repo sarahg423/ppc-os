@@ -12,6 +12,8 @@ VALID_MATCH_TYPES = {"Broad", "Phrase", "Exact"}
 VALID_STATUSES = {"Active", "Paused", "Removed"}
 VALID_CRITERION_TYPES = {"Negative broad", "Negative phrase", "Negative exact"}
 VALID_BUDGET_TYPES = {"Daily"}
+VALID_BID_STRATEGIES = {"Maximize clicks", "Maximize conversions", "Target CPA", "Target ROAS", "Manual CPC"}
+VALID_NETWORKS = {"Google search", "Search partners", "Google search;Search partners"}
 
 
 def _get_ad_limits() -> dict:
@@ -29,6 +31,35 @@ class ValidationError(Exception):
         self.errors = errors
         super().__init__(f"CSV validation failed with {len(errors)} error(s):\n" +
                          "\n".join(f"  - {e}" for e in errors))
+
+
+def validate_campaigns(rows: list[dict]) -> list[str]:
+    """Validate campaign/ad group CSV rows."""
+    errors = []
+    for i, row in enumerate(rows, 1):
+        if not row.get("Campaign"):
+            errors.append(f"Row {i}: Missing Campaign")
+        bid_strategy = row.get("Bid Strategy Type", "")
+        if bid_strategy and bid_strategy not in VALID_BID_STRATEGIES:
+            errors.append(f"Row {i}: Invalid Bid Strategy Type '{bid_strategy}'. Must be one of: {VALID_BID_STRATEGIES}")
+        cpc = row.get("Max CPC", "")
+        if cpc:
+            if str(cpc).startswith("$"):
+                errors.append(f"Row {i}: Max CPC should not have '$' — use plain number")
+            try:
+                float(str(cpc).replace("$", ""))
+            except ValueError:
+                errors.append(f"Row {i}: Max CPC '{cpc}' is not a valid number")
+        status = row.get("Campaign Status", "")
+        if status and status not in VALID_STATUSES:
+            errors.append(f"Row {i}: Invalid Campaign Status '{status}'. Must be one of: {VALID_STATUSES}")
+        ag_status = row.get("Ad Group Status", "")
+        if ag_status and ag_status not in VALID_STATUSES:
+            errors.append(f"Row {i}: Invalid Ad Group Status '{ag_status}'. Must be one of: {VALID_STATUSES}")
+        network = row.get("Network", "")
+        if network and network not in VALID_NETWORKS:
+            errors.append(f"Row {i}: Invalid Network '{network}'. Must be one of: {VALID_NETWORKS}")
+    return errors
 
 
 def validate_keywords(rows: list[dict]) -> list[str]:

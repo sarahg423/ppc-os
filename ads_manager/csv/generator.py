@@ -15,6 +15,7 @@ from typing import Optional
 from ads_manager.api.client import get_account_id
 from .validator import (
     ValidationError,
+    validate_campaigns,
     validate_keywords,
     validate_negative_keywords,
     validate_rsa,
@@ -124,6 +125,50 @@ def write_rsa_csv(
             values += [row.get("Final URL", ""), row.get("Path 1", ""), row.get("Path 2", "")]
             writer.writerow(values)
     print(f"Wrote {len(rows)} RSA ad(s) to {filepath}")
+    return filepath
+
+
+def write_campaign_csv(
+    rows: list[dict], filename: str = "campaigns.csv",
+    output_dir: Optional[Path] = None,
+) -> Path:
+    """Generate a campaign + ad group CSV for Ads Editor import.
+
+    Each row creates either a campaign-level or ad-group-level entry.
+    Campaigns get a bid strategy; ad groups get a default Max CPC.
+
+    Expected row keys:
+        Campaign, Ad Group (optional), Bid Strategy Type,
+        Max CPC, Campaign Status, Ad Group Status, Network
+    """
+    errors = validate_campaigns(rows)
+    if errors:
+        raise ValidationError(errors)
+
+    out = output_dir or OUTPUT_DIR
+    _ensure_dir(out)
+    filepath = out / filename
+    account = _account_id()
+
+    headers = [
+        "Account", "Campaign", "Campaign Status", "Bid Strategy Type",
+        "Ad Group", "Ad Group Status", "Max CPC", "Network",
+    ]
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        for row in rows:
+            writer.writerow([
+                account,
+                row["Campaign"],
+                row.get("Campaign Status", "Active"),
+                row.get("Bid Strategy Type", ""),
+                row.get("Ad Group", ""),
+                row.get("Ad Group Status", "Active"),
+                row.get("Max CPC", ""),
+                row.get("Network", "Google search"),
+            ])
+    print(f"Wrote {len(rows)} campaign/ad group row(s) to {filepath}")
     return filepath
 
 

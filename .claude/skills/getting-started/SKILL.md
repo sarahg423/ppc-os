@@ -140,7 +140,44 @@ Ask about:
 
 ---
 
-### Section 7: Benchmarks & Guardrails
+### Section 7: Location Targeting
+
+Goal: Determine whether ads need geotargeting and capture the details.
+
+Ask about:
+- **Should your ads be location-targeted?** If you're a brick-and-mortar business, local service, or only serve a specific region, the answer is almost certainly yes. For online-only businesses serving a whole country, it might be no.
+- **If yes, what area?** Two options:
+  - **Radius targeting**: Pick a center point (your business address or city center) and a radius in miles. Best for single-location businesses.
+  - **Named locations**: Target specific cities, states, or DMAs. Best for multi-location or regional businesses.
+- **How big is your radius?** For most local businesses, 25-50 miles is a good start. Restaurants and bars might want 10-15 miles. A destination venue might want 50-100 miles.
+- **Location intent**: Default to **"People in or regularly in your targeted locations"** (PRESENCE). This means only people physically in the area see your ads. The alternative — "people interested in" — would show ads to someone in NYC googling "things to do in Bristol" which wastes budget for local businesses.
+
+Store in `config/account.yaml` under a `geotargeting` key:
+
+```yaml
+geotargeting:
+  enabled: true
+  intent: "PRESENCE"  # or "PRESENCE_OR_INTEREST"
+  radius:
+    label: "Bristol, TN"
+    lat: 36.5951
+    lng: -82.1887
+    miles: 50
+  locations: []  # Alternative: named locations like ["Bristol, Tennessee"]
+```
+
+For businesses that don't need geotargeting:
+
+```yaml
+geotargeting:
+  enabled: false
+```
+
+Tell the user: "Geotargeting is applied via the Google Ads API. If you don't have API credentials set up yet, we'll save the config and apply it when credentials are available. You can also set this manually in the Google Ads UI."
+
+---
+
+### Section 8: Benchmarks & Guardrails
 
 Goal: Set the thresholds the audit system uses to flag problems.
 

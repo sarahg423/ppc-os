@@ -66,6 +66,10 @@ Before pushing, compile every pending change into a summary table:
 ### New Negative Keywords
 | Campaign | Keyword | Type |
 |----------|---------|------|
+
+### Geotargeting Changes
+| Campaign | Type | Details | Intent |
+|----------|------|---------|--------|
 ```
 
 ### Step 3: Get User Confirmation
@@ -76,12 +80,16 @@ Present the summary and ask: "Ready to push these changes?" Do NOT proceed witho
 
 #### API Mode
 
-Execute mutations in order: budgets → keywords → ads → negatives.
+Execute mutations in order: budgets → geotargeting → keywords → ads → negatives.
 
 ```python
 from ads_manager.api.mutate import (
     update_campaign_budget, update_keyword_bid,
     update_keyword_status, create_responsive_search_ad,
+)
+from ads_manager.api.geotargeting import (
+    apply_geotargeting_from_config,
+    set_location_targets, set_radius_target, set_location_intent,
 )
 ```
 

@@ -57,6 +57,12 @@ ad_copy:
   required_mentions: []           # Phrases to include wherever space allows
     # - "No credit card required"
 
+search_console:
+  enabled: false                    # Set to true if you have GSC access
+  site_url: ""                      # Your GSC property URL
+                                    # Domain property: "sc-domain:example.com"
+                                    # URL prefix: "https://www.example.com"
+
 reporting:
   format: "markdown"
   output_dir: "reports"

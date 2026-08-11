@@ -177,7 +177,43 @@ Tell the user: "Geotargeting is applied via the Google Ads API. If you don't hav
 
 ---
 
-### Section 8: Benchmarks & Guardrails
+### Section 8: Organic Search (Google Search Console)
+
+Goal: Determine whether organic search data is available so audits can cover both paid and free traffic.
+
+Ask about:
+- **Do you have Google Search Console set up for your website?** Most website owners do (Google prompts you to verify). If they're not sure, they can check at https://search.google.com/search-console
+- **If yes, what's the property URL?** Two formats:
+  - **Domain property** (preferred): `sc-domain:example.com` — covers all subdomains
+  - **URL prefix**: `https://www.example.com` — covers just that exact prefix
+- **Do you have API access or would you export CSVs?** Same dual-mode approach as Google Ads:
+  - **API mode**: Needs OAuth credentials with Search Console scope (often the same Google Cloud project as Google Ads)
+  - **CSV mode**: User exports performance data from the GSC web interface and drops files in `data/exports/`
+
+If they don't have GSC set up, recommend it: "Search Console is free and shows you what people search to find your website organically. It takes about 5 minutes to verify. The audit reports will be much more useful with both paid and organic data."
+
+Store in `config/account.yaml`:
+
+```yaml
+search_console:
+  enabled: true
+  site_url: "sc-domain:example.com"  # or "https://www.example.com"
+```
+
+If they also have API credentials, add to `config/credentials.yaml`:
+
+```yaml
+search_console:
+  client_id: "same-as-google-ads"
+  client_secret: "same-as-google-ads"
+  refresh_token: "token-with-webmasters-scope"
+```
+
+For businesses without GSC: `search_console.enabled: false`. The audit will still work, it just won't include organic data.
+
+---
+
+### Section 9: Benchmarks & Guardrails
 
 Goal: Set the thresholds the audit system uses to flag problems.
 

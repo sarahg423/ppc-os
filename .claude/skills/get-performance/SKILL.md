@@ -1,14 +1,15 @@
 ---
 name: get-performance
 description: >
-  Pull Google Ads campaign performance data and generate analysis. Use this
-  skill whenever the user asks to check performance, run an audit, see how
-  campaigns are doing, or pull metrics. Handles both API mode and CSV fallback.
+  Pull Google Ads and organic search performance data and generate analysis.
+  Use this skill whenever the user asks to check performance, run an audit,
+  see how campaigns are doing, pull metrics, or check organic search traffic.
+  Handles both API mode and CSV fallback for Google Ads and Google Search Console.
 ---
 
 # Get Performance Skill
 
-Pull campaign, ad group, keyword, and ad-level performance data from Google Ads.
+Pull paid (Google Ads) and organic (Google Search Console) performance data.
 
 ## How It Works
 
@@ -84,27 +85,85 @@ Key comparisons:
 - Impression share vs. `benchmarks.impression_share_min`
 - Cost per conversion vs. `benchmarks.cost_per_conversion_max`
 
-### Step 5: Generate Report
+### Step 4b: Pull Organic Search Data (if available)
+
+Check if Google Search Console is configured, and pull organic data using the same API-first, CSV-fallback pattern:
 
 ```python
-from ads_manager.reports.generator import generate_audit_report
+from ads_manager.api.search_console import is_gsc_available, get_query_performance, get_page_performance, find_paid_organic_overlap
 
-report_path = generate_audit_report(
+organic_queries = None
+organic_pages = None
+paid_organic_overlaps = None
+
+if is_gsc_available():
+    organic_queries = get_query_performance(days=7)
+    organic_pages = get_page_performance(days=7)
+    # Find keywords where the user pays for ads but also ranks organically
+    paid_organic_overlaps = find_paid_organic_overlap(organic_queries, keywords)
+else:
+    # Check for GSC CSV exports
+    from ads_manager.csv.search_console_parser import list_gsc_exports, parse_gsc_queries_export, parse_gsc_pages_export
+    gsc_exports = list_gsc_exports()
+    if gsc_exports:
+        for export in gsc_exports:
+            name = export.name.lower()
+            if "quer" in name:
+                organic_queries = parse_gsc_queries_export(export)
+            elif "page" in name:
+                organic_pages = parse_gsc_pages_export(export)
+        if organic_queries and keywords:
+            paid_organic_overlaps = find_paid_organic_overlap(organic_queries, keywords)
+```
+
+If neither API nor CSV data is available for GSC, skip the organic sections. Don't error — organic data is optional. Mention to the user that setting up GSC would make future reports more complete.
+
+### Step 5: Generate Reports
+
+Generate both a technical audit and a plain-English business report:
+
+```python
+from ads_manager.reports.generator import generate_audit_report, generate_business_report
+
+# Technical report — detailed tables, benchmark flags
+audit_path = generate_audit_report(
     campaigns=campaigns, keywords=keywords,
     benchmarks=benchmarks, recommendations=recommendations,
     days=7,
 )
+
+# Business report — plain English, week-over-week trends, organic data, change attribution
+business_path = generate_business_report(
+    campaigns=campaigns, keywords=keywords,
+    benchmarks=benchmarks, recommendations=recommendations,
+    days=7,
+    organic_queries=organic_queries,
+    organic_pages=organic_pages,
+    paid_organic_overlaps=paid_organic_overlaps,
+)
 ```
 
-The report is written to `reports/audit_YYYY-MM-DD.md`. Account name and ID are read from config automatically.
+The business report (`reports/report_YYYY-MM-DD.md`) is written for non-technical users. It:
+- Translates metrics into business language ("47 people visited your site, 3 bought tickets")
+- Shows week-over-week trends compared to the previous audit snapshot
+- Attributes changes ("since you paused keyword X, cost per customer dropped 18%")
+- Explains issues in plain English with specific advice
+- Includes a glossary of marketing terms
+
+The technical report (`reports/audit_YYYY-MM-DD.md`) keeps the full metric tables for deeper analysis.
+
+Both reports save a historical snapshot to `data/history/` automatically. This powers future trend comparisons.
+
+**Default to the business report** unless the user asks for detailed metrics or is clearly comfortable with marketing terminology.
 
 ### Step 6: Present Findings
 
-After generating the report, present a concise summary:
-- Overall account spend and key metrics
-- Any campaigns flagged by benchmarks
-- Top 3-5 actionable recommendations
-- Path to the full report
+After generating the report, present the business summary directly in the conversation:
+- How many people saw ads, clicked, and took action
+- What it cost and how that compares to last time
+- What needs attention, in plain English
+- Suggested next steps
+- Path to both reports
 
 ## Date Range Options
 

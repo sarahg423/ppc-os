@@ -18,6 +18,7 @@ venv/
 reports/*.md
 data/imports/*.csv
 data/exports/*.csv
+data/history/
 
 # IDE
 .vscode/

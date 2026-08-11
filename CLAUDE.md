@@ -1,6 +1,6 @@
 # ppc-os — Claude Code Instructions
 
-You are managing Google Ads campaigns. All account-specific configuration — account ID, brand name, voice rules, benchmarks, and ad copy guidelines — lives in `config/account.yaml`. **Always read that file before doing any work.** Never hardcode account IDs, brand names, or URLs.
+You are managing paid and organic search marketing. All account-specific configuration — account ID, brand name, voice rules, benchmarks, and ad copy guidelines — lives in `config/account.yaml`. **Always read that file before doing any work.** Never hardcode account IDs, brand names, or URLs.
 
 ## Quick Start
 
@@ -21,12 +21,12 @@ claude "Run a full campaign audit for the last 7 days"
 
 ## Architecture
 
-This repo has two modes for interacting with Google Ads:
+This repo has two modes for interacting with Google Ads and Google Search Console:
 
-1. **API mode** (primary) — Uses the `google-ads` Python SDK to pull performance data and push changes programmatically. Requires credentials in `config/credentials.yaml`.
-2. **CSV mode** (fallback) — Generates properly formatted CSVs for import into the Google Ads Editor desktop app, and parses exported CSVs for performance data. Use this when API credentials aren't available or when the user wants to review changes in Ads Editor before pushing.
+1. **API mode** (primary) — Uses the `google-ads` Python SDK and `google-api-python-client` to pull performance data and push changes programmatically. Requires credentials in `config/credentials.yaml`.
+2. **CSV mode** (fallback) — Generates properly formatted CSVs for import into the Google Ads Editor desktop app, and parses exported CSVs for performance data. For GSC, parses CSV exports from the Search Console web interface. Use this when API credentials aren't available.
 
-Always try API mode first. If it fails (missing credentials, auth errors), fall back to CSV mode and tell the user.
+Always try API mode first. If it fails (missing credentials, auth errors), fall back to CSV mode and tell the user. Organic search (GSC) data is optional — audits work without it, but are more useful with it.
 
 ## Project Structure
 
@@ -40,16 +40,20 @@ Always try API mode first. If it fails (missing credentials, auth errors), fall 
 │   ├── brand-voice.md           # Tone guidelines and writing samples (gitignored)
 │   └── campaigns.md             # Which campaigns are managed (gitignored)
 ├── ads_manager/
-│   ├── api/                     # Google Ads API client wrappers
-│   │   ├── client.py            # Auth and client initialization
+│   ├── api/                     # API client wrappers
+│   │   ├── client.py            # Google Ads auth and client initialization
 │   │   ├── performance.py       # Pull campaign/ad group/keyword metrics
-│   │   └── mutate.py            # Push changes (budgets, bids, ads, keywords)
-│   ├── csv/                     # Ads Editor CSV generation and parsing
-│   │   ├── generator.py         # Generate import-ready CSVs
+│   │   ├── mutate.py            # Push changes (budgets, bids, ads, keywords)
+│   │   └── search_console.py    # Google Search Console organic data
+│   ├── csv/                     # CSV generation and parsing
+│   │   ├── generator.py         # Generate import-ready CSVs for Ads Editor
 │   │   ├── parser.py            # Parse exported CSVs from Ads Editor
-│   │   └── validator.py         # Validate CSV format before export
+│   │   ├── validator.py         # Validate CSV format before export
+│   │   └── search_console_parser.py  # Parse GSC CSV exports
+│   ├── history.py               # Historical snapshots and change tracking
 │   └── reports/                 # Markdown report generation
-│       ├── templates.py         # Report section templates
+│       ├── templates.py         # Technical report templates
+│       ├── human_readable.py    # Business-language report sections
 │       └── generator.py         # Assemble full audit reports
 ├── .claude/
 │   └── skills/                  # Claude Code skills
@@ -62,7 +66,8 @@ Always try API mode first. If it fails (missing credentials, auth errors), fall 
 ├── reports/                     # Generated reports land here
 ├── data/
 │   ├── imports/                 # CSVs ready for Ads Editor import
-│   └── exports/                 # CSVs exported from Ads Editor
+│   ├── exports/                 # CSVs exported from Ads Editor or GSC
+│   └── history/                 # Audit snapshots and change log (gitignored)
 └── scripts/
     └── audit.py                 # Full audit workflow script
 ```
@@ -118,10 +123,18 @@ Brand voice rules (forbidden phrases, preferred CTAs, tone guidelines) are all i
 
 ## Workflow: Weekly Audit
 
-1. **Pull performance** → Use `get-performance` skill for last 7 days
+1. **Pull performance** → Use `get-performance` skill for last 7 days (paid + organic)
 2. **Analyze** → Compare against benchmarks from config, identify underperformers
 3. **Recommend changes** → Generate specific, actionable recommendations
-4. **Generate report** → Markdown report in `reports/` directory
+4. **Generate reports** → Business report (plain English) + technical report in `reports/`
 5. **Prepare changes** → Use appropriate skills to create change sets
 6. **Review** → Present changes to user before pushing
 7. **Push** → Use `push-changes` skill to apply (API or CSV)
+
+The business report is the default for non-technical users. It uses plain English, shows week-over-week trends, attributes changes to actions taken, and includes organic search data when available. The technical report has the full metric tables for deeper analysis.
+
+## Reports and History
+
+Audit snapshots are saved to `data/history/` as JSON files. Each snapshot records campaign metrics, keyword data, and recommendations. The business report automatically compares against the previous snapshot to show trends.
+
+Changes made via `push-changes` are logged in `data/history/change_log.json` so the next audit can attribute results: "Since you paused keyword X on Monday, cost per customer dropped 18%."

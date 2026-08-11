@@ -118,7 +118,25 @@ Then review in Ads Editor and post.
 
 **CSV mode**: Remind the user of Ads Editor import steps.
 
-Append to `reports/change_log.md` so there's a record of what was changed.
+**Always log changes for history tracking** so the next audit can attribute results:
+
+```python
+from ads_manager.history import log_change
+
+# Examples:
+log_change("budget_increase", "Daily budget $3.29 -> $4.00",
+           campaign="Things To Do - Bristol")
+log_change("paused_keyword", "Paused 'comedy show tickets' (0 conversions, $12 spend)",
+           campaign="Things To Do - Bristol", keywords=["comedy show tickets"])
+log_change("new_ad", "Added RSA with headline 'Live Comedy in Bristol'",
+           campaign="Things To Do - Bristol")
+log_change("added_negative", "Added negative keyword 'comedy club jobs'",
+           campaign="Things To Do - Bristol", keywords=["comedy club jobs"])
+```
+
+Log every change with enough detail that the next audit report can say: "Since you paused keyword X on Monday, your cost per customer dropped 18%."
+
+Also append to `reports/change_log.md` for the human-readable record.
 
 ## CSV Formatting Reminders
 

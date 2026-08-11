@@ -1,10 +1,10 @@
-"""Automatically create Google Business Profile posts for upcoming shows.
+"""Automatically create Google Business Profile posts for upcoming events.
 
-Scrapes the BRCC website for upcoming shows and creates GBP event posts
-for shows happening in the next 7 days that haven't been posted yet.
+Scrapes the business website for upcoming events and creates GBP event posts
+for events happening in the next N days that haven't been posted yet.
 
 Reads brand voice from config/brand-voice.md and account config from
-config/account.yaml to write posts that match the club's tone.
+config/account.yaml to write posts that match the business's tone.
 """
 
 import json
@@ -18,29 +18,29 @@ from ads_manager.api.client import load_account_config
 from .client import create_event_post, list_posts, is_gbp_available, GBPClientError
 
 
-POSTED_SHOWS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "gbp_posted_shows.json"
+POSTED_EVENTS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "gbp_posted_events.json"
 
 
-def _load_posted_shows() -> set:
-    """Load the set of show titles+dates already posted."""
-    if POSTED_SHOWS_FILE.exists():
-        with open(POSTED_SHOWS_FILE) as f:
+def _load_posted_events() -> set:
+    """Load the set of event titles+dates already posted."""
+    if POSTED_EVENTS_FILE.exists():
+        with open(POSTED_EVENTS_FILE) as f:
             return set(json.load(f))
     return set()
 
 
-def _save_posted_shows(posted: set) -> None:
-    """Save the set of posted shows."""
-    POSTED_SHOWS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(POSTED_SHOWS_FILE, "w") as f:
+def _save_posted_events(posted: set) -> None:
+    """Save the set of posted events."""
+    POSTED_EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(POSTED_EVENTS_FILE, "w") as f:
         json.dump(sorted(posted), f, indent=2)
 
 
-def scrape_upcoming_shows(url: str = None) -> list[dict]:
-    """Scrape the BRCC website for upcoming shows.
+def scrape_upcoming_events(url: str = None) -> list[dict]:
+    """Scrape the business website for upcoming events.
 
     Returns a list of dicts with keys:
-        name, date, time, price, description, url
+        name, date_text, price, description, url
     """
     config = load_account_config()
     site_url = url or config["brand"]["website"]
@@ -48,20 +48,20 @@ def scrape_upcoming_shows(url: str = None) -> list[dict]:
     response = requests.get(site_url, timeout=15)
     response.raise_for_status()
 
-    # Parse the page — this is site-specific and may need updating
-    # if the website structure changes
     soup = BeautifulSoup(response.text, "html.parser")
 
-    shows = []
-    # Look for event containers — adjust selectors based on actual site structure
-    event_elements = soup.select(".event-item, .show-item, article.event, .tribe-events-calendar-list__event")
+    events = []
+    # Look for event containers — common CMS patterns
+    event_elements = soup.select(
+        ".event-item, .show-item, article.event, "
+        ".tribe-events-calendar-list__event, "
+        "[class*='event-card'], [class*='event-list']"
+    )
 
     if not event_elements:
-        # Fallback: look for common event markup patterns
         event_elements = soup.select("[class*='event'], [class*='show']")
 
     for el in event_elements:
-        # Extract what we can — this is a best-effort scraper
         title_el = el.select_one("h2, h3, .event-title, .show-title, [class*='title']")
         date_el = el.select_one("time, .event-date, .show-date, [class*='date']")
         price_el = el.select_one(".event-price, .show-price, [class*='price']")
@@ -69,78 +69,91 @@ def scrape_upcoming_shows(url: str = None) -> list[dict]:
         desc_el = el.select_one(".event-description, .show-description, p")
 
         if title_el:
-            show = {
+            event = {
                 "name": title_el.get_text(strip=True),
                 "date_text": date_el.get_text(strip=True) if date_el else "",
                 "price": price_el.get_text(strip=True) if price_el else "",
                 "url": link_el["href"] if link_el and link_el.get("href") else site_url,
                 "description": desc_el.get_text(strip=True) if desc_el else "",
             }
-            shows.append(show)
+            events.append(event)
 
-    return shows
+    return events
 
 
-def create_show_post(
+def create_event_gbp_post(
     name: str,
     date: dict,
     start_time: dict,
     end_time: dict,
-    price: str,
-    description: str,
-    url: str,
+    price: str = "",
+    description: str = "",
+    url: str = "",
     photo_url: str = None,
+    summary_override: str = None,
 ) -> dict:
-    """Create a GBP event post for an upcoming show.
+    """Create a GBP event post for an upcoming event.
+
+    Reads brand name and website from config. If summary_override is provided,
+    uses that instead of generating a summary.
 
     Args:
-        name: Performer/show name
+        name: Event/performer name
         date: {"year": 2026, "month": 4, "day": 17}
         start_time: {"hours": 19, "minutes": 0}
         end_time: {"hours": 22, "minutes": 0}
         price: Price text (e.g., "$25")
-        description: Show description
-        url: Ticket URL
-        photo_url: Optional performer photo URL
+        description: Event description
+        url: Ticket/event URL
+        photo_url: Optional event photo URL
+        summary_override: Optional pre-written post text
 
     Returns:
         API response from GBP
     """
-    # Build a post that matches BRCC's voice — fun, direct, not corporate
-    summary = f"{name} live at Blue Ridge Comedy Club! "
-    if description:
-        summary += f"{description} "
-    if price:
-        summary += f"Tickets {price}. "
-    summary += "Get yours at blueridgecomedy.com — no drink minimum, no ticket fees."
+    config = load_account_config()
+    brand_name = config["brand"]["name"]
+    website = config["brand"]["website"]
+
+    if summary_override:
+        summary = summary_override
+    else:
+        summary = f"{name} at {brand_name}! "
+        if description:
+            summary += f"{description} "
+        if price:
+            summary += f"Tickets {price}. "
+        summary += f"More info at {website}"
 
     # Trim to 1500 char limit
     if len(summary) > 1500:
         summary = summary[:1497] + "..."
 
+    cta_url = url or website
+
     result = create_event_post(
-        title=f"{name} — Live at Blue Ridge Comedy Club",
+        title=f"{name} — {brand_name}",
         summary=summary,
         start_date=date,
         start_time=start_time,
         end_date=date,
         end_time=end_time,
-        cta_url=url,
+        cta_url=cta_url,
         cta_action="BOOK",
         photo_url=photo_url,
     )
 
-    # Track that we posted this show
-    posted = _load_posted_shows()
-    show_key = f"{name}|{date['year']}-{date['month']:02d}-{date['day']:02d}"
-    posted.add(show_key)
-    _save_posted_shows(posted)
+    # Track that we posted this event
+    posted = _load_posted_events()
+    event_key = f"{name}|{date['year']}-{date['month']:02d}-{date['day']:02d}"
+    posted.add(event_key)
+    _save_posted_events(posted)
 
     return result
 
 
-def post_upcoming_shows(days_ahead: int = 7, dry_run: bool = False) -> list[dict]:
-    """Post all shows happening in the next N days that haven't been posted yet.
+def post_upcoming_events(days_ahead: int = 7, dry_run: bool = False) -> list[dict]:
+    """Post all events happening in the next N days that haven't been posted yet.
 
     Args:
         days_ahead: How far ahead to look (default 7 days)
@@ -152,22 +165,23 @@ def post_upcoming_shows(days_ahead: int = 7, dry_run: bool = False) -> list[dict
     if not is_gbp_available():
         raise GBPClientError("GBP credentials not configured.")
 
-    shows = scrape_upcoming_shows()
-    posted = _load_posted_shows()
+    events = scrape_upcoming_events()
+    posted = _load_posted_events()
     results = []
 
-    for show in shows:
-        show_key = f"{show['name']}|{show.get('date_text', '')}"
+    for event in events:
+        event_key = f"{event['name']}|{event.get('date_text', '')}"
 
-        if show_key in posted:
-            print(f"  Already posted: {show['name']}")
+        if event_key in posted:
+            print(f"  Already posted: {event['name']}")
             continue
 
         if dry_run:
-            print(f"  Would post: {show['name']} — {show.get('date_text', 'date unknown')}")
+            print(f"  Would post: {event['name']} — {event.get('date_text', 'date unknown')}")
         else:
-            print(f"  Posting: {show['name']}")
-            # Note: actual date parsing would need to be implemented
-            # based on the website's date format
+            print(f"  Posting: {event['name']}")
+            # Note: Claude should parse the date_text into structured date/time
+            # before calling create_event_gbp_post. The scraper returns raw text
+            # because date formats vary by website.
 
     return results

@@ -19,6 +19,7 @@ reports/*.md
 data/imports/*.csv
 data/exports/*.csv
 data/history/
+data/gbp_posted_events.json
 
 # IDE
 .vscode/

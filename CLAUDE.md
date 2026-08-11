@@ -58,9 +58,10 @@ Always try API mode first. If it fails (missing credentials, auth errors), fall 
 ├── .claude/
 │   └── skills/                  # Claude Code skills
 │       ├── getting-started/     # Onboarding interview — run this first
-│       ├── get-performance/     # Pull and analyze performance data
+│       ├── get-performance/     # Pull and analyze performance data (paid + organic)
 │       ├── ad-creation/         # Create and edit RSA ad copy
 │       ├── budget-management/   # Adjust budgets and bids
+│       ├── gbp-posting/         # Google Business Profile posts and events
 │       ├── push-changes/        # Push changes via API or CSV
 │       └── schedule-setup/      # Set up automated audit schedules
 ├── reports/                     # Generated reports land here

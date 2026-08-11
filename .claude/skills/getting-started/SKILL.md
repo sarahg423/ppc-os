@@ -213,7 +213,30 @@ For businesses without GSC: `search_console.enabled: false`. The audit will stil
 
 ---
 
-### Section 9: Benchmarks & Guardrails
+### Section 9: Google Business Profile
+
+Goal: Determine if GBP posting should be part of their marketing workflow.
+
+Ask about:
+- **Do you have a Google Business Profile?** Most local businesses do. If they're not sure, they can check at business.google.com.
+- **Is it verified and active?** An unverified profile can't accept posts.
+- **Do you currently post to it?** Many businesses set up GBP and never touch it again. That's a missed opportunity.
+- **Does your business have regular events, promotions, or updates?** This determines whether automated event posting is useful.
+
+If they have GBP:
+- Explain that posting 1-2 times per week keeps the profile active and improves local search visibility
+- Ask if they want automated event posting (scrapes their website for upcoming events and creates GBP posts)
+- If they have API credentials (same OAuth client), add GBP config to `config/credentials.yaml`
+
+If they don't have GBP:
+- For local businesses, recommend setting one up: "GBP is free and shows up in Google Maps and local search results. It's one of the most effective things a local business can do for visibility."
+- For online-only businesses, skip this section.
+
+The `gbp-posting` skill works in manual mode even without API credentials. It drafts post text the user can copy into the GBP web interface.
+
+---
+
+### Section 10: Benchmarks & Guardrails
 
 Goal: Set the thresholds the audit system uses to flag problems.
 

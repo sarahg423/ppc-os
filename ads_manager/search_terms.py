@@ -58,9 +58,10 @@ def analyze_search_terms(
         elif conversions > 0:
             term_lower = term.lower().strip()
             if term_lower not in existing_keywords:
+                cpa_text = f"at ${cpa:.2f} each" if cpa else ""
                 opportunities.append({
                     **st,
-                    "reason": f"Converting ({conversions:.0f} conversions at ${cpa:.2f} each) but not an exact-match keyword yet",
+                    "reason": f"Converting ({conversions:.0f} conversions {cpa_text}) but not an exact-match keyword yet".replace("  ", " "),
                 })
             else:
                 working.append(st)

@@ -61,6 +61,7 @@ Always try API mode first. If it fails (missing credentials, auth errors), fall 
 │       ├── get-performance/     # Pull and analyze performance data (paid + organic)
 │       ├── ad-creation/         # Create and edit RSA ad copy
 │       ├── budget-management/   # Adjust budgets and bids
+│       ├── keyword-strategy/    # Keyword optimization and search term analysis
 │       ├── gbp-posting/         # Google Business Profile posts and events
 │       ├── push-changes/        # Push changes via API or CSV
 │       └── schedule-setup/      # Set up automated audit schedules

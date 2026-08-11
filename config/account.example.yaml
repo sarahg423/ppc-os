@@ -57,6 +57,13 @@ ad_copy:
   required_mentions: []           # Phrases to include wherever space allows
     # - "No credit card required"
 
+budget:
+  monthly: 500.00                   # Total monthly ad budget
+  daily: 16.45                      # monthly / 30.4 — Google can spend up to 2x on any day
+  pacing: "even"                    # "even" = spread evenly, "front-load" = spend early in month
+  target_cpa: 25.00                 # Ideal cost per conversion
+  max_cpa: 50.00                    # Hard max — flag anything above this
+
 search_console:
   enabled: false                    # Set to true if you have GSC access
   site_url: ""                      # Your GSC property URL

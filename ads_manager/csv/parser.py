@@ -87,6 +87,30 @@ def parse_ad_export(filepath: str | Path) -> list[dict]:
     return ads
 
 
+def parse_search_terms_export(filepath: str | Path) -> list[dict]:
+    """Parse a search terms report export."""
+    rows = parse_csv(filepath)
+    search_terms = []
+    for row in rows:
+        search_terms.append({
+            "campaign_name": row.get("Campaign", ""),
+            "ad_group_name": row.get("Ad group", row.get("Ad Group", "")),
+            "search_term": row.get("Search term", row.get("Search Term", "")),
+            "matched_keyword": row.get("Keyword", row.get("Matched keyword", "")),
+            "matched_type": row.get("Match type", row.get("Match Type", "")),
+            "impressions": _to_int(row.get("Impressions", "")),
+            "clicks": _to_int(row.get("Clicks", "")),
+            "ctr": _to_pct(row.get("CTR", "")),
+            "avg_cpc": _to_float(row.get("Avg. CPC", row.get("Average CPC", ""))),
+            "cost": _to_float(row.get("Cost", "")),
+            "conversions": _to_float(row.get("Conversions", "")),
+            "cost_per_conversion": _to_float(
+                row.get("Cost / conv.", row.get("Cost per conversion", ""))
+            ),
+        })
+    return search_terms
+
+
 def list_exports() -> list[Path]:
     """List all CSV files in the exports directory."""
     if not EXPORT_DIR.exists():

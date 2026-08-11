@@ -23,6 +23,7 @@ from .human_readable import (
     business_summary, trend_summary, change_attribution,
     plain_english_flags, plain_english_recommendations, glossary,
     organic_summary, organic_opportunities, paid_organic_overlap_summary,
+    search_terms_summary, negative_keyword_recommendations,
 )
 
 REPORTS_DIR = Path(__file__).resolve().parent.parent.parent / "reports"
@@ -79,11 +80,13 @@ def generate_business_report(
     organic_queries: Optional[list[dict]] = None,
     organic_pages: Optional[list[dict]] = None,
     paid_organic_overlaps: Optional[list[dict]] = None,
+    search_term_analysis: Optional[dict] = None,
+    negative_candidates: Optional[list[dict]] = None,
 ) -> Path:
     """Generate a plain-English business report for non-technical users.
 
-    Includes week-over-week trends, change attribution, organic search
-    data (if available), paid/organic overlap analysis, and a glossary.
+    Includes week-over-week trends, change attribution, search term analysis,
+    organic search data (if available), paid/organic overlap, and a glossary.
     Saves a snapshot and compares against the previous one automatically.
     """
     config = load_account_config()
@@ -118,6 +121,12 @@ def generate_business_report(
         changes = get_changes_since(previous["date"])
         if changes:
             sections.append(change_attribution(changes))
+
+    # Search term analysis (what people actually typed)
+    if search_term_analysis:
+        sections.append(search_terms_summary(search_term_analysis))
+        if negative_candidates:
+            sections.append(negative_keyword_recommendations(negative_candidates))
 
     # Organic search data (from GSC)
     if organic_queries or organic_pages:

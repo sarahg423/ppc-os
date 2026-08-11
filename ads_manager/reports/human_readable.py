@@ -324,6 +324,107 @@ def paid_organic_overlap_summary(overlaps: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def search_terms_summary(analysis: dict) -> str:
+    """Plain-English summary of what people actually searched."""
+    stats = analysis.get("stats", {})
+    waste = analysis.get("waste", [])
+    opportunities = analysis.get("opportunities", [])
+
+    lines = ["## What People Actually Searched\n"]
+
+    total = stats.get("total_search_terms", 0)
+    waste_cost = stats.get("waste_cost", 0)
+    waste_count = stats.get("waste_count", 0)
+    opp_count = stats.get("opportunity_count", 0)
+
+    lines.append(
+        f"Your ads were triggered by **{total} different searches** this period. "
+        f"Here's what stood out:\n"
+    )
+
+    # Waste section
+    if waste:
+        lines.append(
+            f"### Money being wasted ({waste_count} searches, ${waste_cost:.2f} total)\n"
+        )
+        lines.append(
+            "These searches triggered your ads but nobody converted. "
+            "Adding them as negative keywords stops your ads from showing "
+            "for these searches, saving money.\n"
+        )
+        for w in waste[:7]:
+            term = w.get("search_term", "")
+            cost = w.get("cost", 0)
+            clicks = w.get("clicks", 0)
+            lines.append(
+                f"- **\"{term}\"** — {clicks} clicks, ${cost:.2f} spent, zero conversions"
+            )
+        if len(waste) > 7:
+            remaining_cost = sum(w.get("cost", 0) for w in waste[7:])
+            lines.append(
+                f"- ...and {len(waste) - 7} more wasted searches (${remaining_cost:.2f} total)"
+            )
+        lines.append("")
+
+    # Opportunities section
+    if opportunities:
+        lines.append(
+            f"### Searches worth adding as keywords ({opp_count} found)\n"
+        )
+        lines.append(
+            "These searches led to actual conversions but aren't in your keyword "
+            "list as exact matches yet. Adding them gives you more control over "
+            "bids and helps Google show your ads for these specific searches.\n"
+        )
+        for o in opportunities[:5]:
+            term = o.get("search_term", "")
+            convs = o.get("conversions", 0)
+            cost = o.get("cost", 0)
+            cpa = o.get("cost_per_conversion")
+            cpa_str = f" at ${cpa:.2f} each" if cpa else ""
+            lines.append(
+                f"- **\"{term}\"** — {convs:.0f} conversions{cpa_str}, ${cost:.2f} spent"
+            )
+        lines.append("")
+
+    if not waste and not opportunities:
+        lines.append(
+            "Your search terms look clean. No obvious waste or missed opportunities.\n"
+        )
+
+    return "\n".join(lines) + "\n"
+
+
+def negative_keyword_recommendations(candidates: list[dict]) -> str:
+    """Format negative keyword candidates as actionable recommendations."""
+    if not candidates:
+        return ""
+
+    total_savings = sum(c.get("cost", 0) for c in candidates)
+
+    lines = ["## Recommended Negative Keywords\n"]
+    lines.append(
+        f"Adding these negative keywords could save approximately "
+        f"**${total_savings:.2f}** per period by blocking irrelevant searches.\n"
+    )
+
+    lines.append("| Search term | Clicks | Cost | Suggested action |")
+    lines.append("|-------------|--------|------|------------------|")
+
+    for c in candidates:
+        term = c.get("term", "")
+        clicks = c.get("clicks", 0)
+        cost = c.get("cost", 0)
+        match = c.get("match_type", "Negative exact")
+        lines.append(f"| \"{term}\" | {clicks} | ${cost:.2f} | Add as {match} |")
+
+    lines.append("")
+    lines.append(
+        "Say \"add these negative keywords\" to apply them, or pick specific ones to add.\n"
+    )
+    return "\n".join(lines) + "\n"
+
+
 def _position_description(pos: float) -> str:
     """Convert a GSC average position to plain English."""
     if pos <= 1:
@@ -356,6 +457,8 @@ def glossary() -> str:
 | Quality Score | Google's 1-10 rating of your ad relevance (higher is better and cheaper) |
 | Organic search | Free traffic from Google search results (not ads) |
 | Position | Where your page appears in Google results (1 = top, 10 = bottom of page 1) |
+| Search terms | The actual words people typed into Google before clicking your ad |
+| Negative keywords | Words you block so your ad won't show for irrelevant searches |
 """
 
 

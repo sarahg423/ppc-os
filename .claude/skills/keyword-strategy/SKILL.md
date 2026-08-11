@@ -120,12 +120,28 @@ If API isn't available, ask the user to export keyword performance from Google A
 
 ### 3. Search Terms Analysis
 
-When the user has search terms data (from API or exported CSV):
+Pull search term data automatically (API first, CSV fallback) and use the analysis module:
 
-1. **Find converting search terms** not already keywords → recommend adding as Exact match
-2. **Find irrelevant search terms** eating budget → recommend as negative keywords
-3. **Find search terms with high impressions but low CTR** → the ad copy doesn't match the intent, consider a new ad group
-4. **Calculate waste** — What percentage of spend went to irrelevant terms?
+```python
+from ads_manager.api.performance import get_search_terms_performance
+from ads_manager.search_terms import analyze_search_terms, generate_negative_candidates
+
+search_terms = get_search_terms_performance(days=30)
+analysis = analyze_search_terms(search_terms, keywords)
+
+# analysis["waste"] — clicks with zero conversions, sorted by cost
+# analysis["opportunities"] — converting terms not in keyword list
+# analysis["working"] — converting terms that match keywords
+# analysis["stats"] — summary numbers
+
+negative_candidates = generate_negative_candidates(analysis["waste"])
+```
+
+For each category:
+1. **Waste terms** → present as negative keyword candidates with estimated savings
+2. **Opportunity terms** → recommend adding as Exact match keywords
+3. **High-impression, low-CTR terms** → ad copy doesn't match intent, consider a new ad group
+4. **Calculate total waste** — "X% of your budget went to irrelevant searches"
 
 ### 4. Match Type Optimization
 

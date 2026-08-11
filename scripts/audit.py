@@ -92,6 +92,44 @@ def pull_organic_data(days: int, keywords: list[dict]):
     return organic_queries, organic_pages, paid_organic_overlaps
 
 
+def pull_search_terms(days: int, keywords: list[dict], csv_path: str = None):
+    """Pull search term data and analyze for waste/opportunities.
+
+    Returns (analysis_dict, negative_candidates) — either or both may be None.
+    """
+    from ads_manager.search_terms import analyze_search_terms, generate_negative_candidates
+
+    search_terms = None
+
+    if csv_path:
+        # Check for search terms CSV in the same directory
+        from ads_manager.csv.parser import parse_search_terms_export
+        csv_dir = Path(csv_path).parent
+        st_files = list(csv_dir.glob("*search*term*")) + list(csv_dir.glob("*Search*Term*"))
+        if st_files:
+            search_terms = parse_search_terms_export(st_files[0])
+            print(f"  Search terms: {len(search_terms)} from {st_files[0].name}")
+    elif is_api_available():
+        try:
+            from ads_manager.api.performance import get_search_terms_performance
+            print(f"Pulling {days} days of search term data...")
+            search_terms = get_search_terms_performance(days=days)
+            print(f"  Found {len(search_terms)} search terms")
+        except Exception as e:
+            print(f"  Warning: Could not pull search terms: {e}")
+
+    if not search_terms:
+        return None, None
+
+    analysis = analyze_search_terms(search_terms, keywords)
+    stats = analysis["stats"]
+    print(f"  Waste: {stats['waste_count']} terms (${stats['waste_cost']:.2f})")
+    print(f"  Opportunities: {stats['opportunity_count']} converting terms not in keyword list")
+
+    candidates = generate_negative_candidates(analysis["waste"])
+    return analysis, candidates
+
+
 def analyze(campaigns, keywords, benchmarks):
     recommendations = []
     for c in campaigns:
@@ -158,24 +196,28 @@ def main():
     # Pull organic data (optional — never blocks the audit)
     organic_queries, organic_pages, paid_organic_overlaps = pull_organic_data(args.days, keywords)
 
+    # Pull search term data (optional — shows what people actually searched)
+    search_term_analysis, negative_candidates = pull_search_terms(args.days, keywords, args.csv)
+
     recommendations = analyze(campaigns, keywords, benchmarks)
 
+    report_kwargs = dict(
+        campaigns=campaigns, keywords=keywords,
+        benchmarks=benchmarks, recommendations=recommendations, days=args.days,
+        organic_queries=organic_queries, organic_pages=organic_pages,
+        paid_organic_overlaps=paid_organic_overlaps,
+        search_term_analysis=search_term_analysis,
+        negative_candidates=negative_candidates,
+    )
+
     if args.business_only:
-        report_path = generate_business_report(
-            campaigns=campaigns, keywords=keywords,
-            benchmarks=benchmarks, recommendations=recommendations, days=args.days,
-            organic_queries=organic_queries, organic_pages=organic_pages,
-            paid_organic_overlaps=paid_organic_overlaps)
+        report_path = generate_business_report(**report_kwargs)
         print(f"\nAudit complete. Business report: {report_path}")
     else:
         audit_path = generate_audit_report(
             campaigns=campaigns, keywords=keywords,
             benchmarks=benchmarks, recommendations=recommendations, days=args.days)
-        business_path = generate_business_report(
-            campaigns=campaigns, keywords=keywords,
-            benchmarks=benchmarks, recommendations=recommendations, days=args.days,
-            organic_queries=organic_queries, organic_pages=organic_pages,
-            paid_organic_overlaps=paid_organic_overlaps)
+        business_path = generate_business_report(**report_kwargs)
         print(f"\nAudit complete.")
         print(f"  Technical report: {audit_path}")
         print(f"  Business report:  {business_path}")

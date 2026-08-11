@@ -85,7 +85,33 @@ Key comparisons:
 - Impression share vs. `benchmarks.impression_share_min`
 - Cost per conversion vs. `benchmarks.cost_per_conversion_max`
 
-### Step 4b: Pull Organic Search Data (if available)
+### Step 4b: Pull Search Term Data
+
+Pull what people actually searched (not just what keywords you're targeting). This is the most actionable data in the audit — it reveals waste and opportunities.
+
+```python
+from ads_manager.api.performance import get_search_terms_performance
+from ads_manager.search_terms import analyze_search_terms, generate_negative_candidates
+
+search_term_analysis = None
+negative_candidates = None
+
+if is_api_available():
+    search_terms = get_search_terms_performance(days=7)
+    search_term_analysis = analyze_search_terms(search_terms, keywords)
+    negative_candidates = generate_negative_candidates(search_term_analysis["waste"])
+else:
+    # Check for search terms CSV export
+    from ads_manager.csv.parser import parse_search_terms_export
+    # Look for files with "search" and "term" in the name in data/exports/
+```
+
+The analysis categorizes every search term:
+- **Waste**: Clicks and cost with zero conversions (negative keyword candidates)
+- **Opportunities**: Converting searches not yet in the keyword list as exact matches
+- **Working**: Converting searches that match existing keywords
+
+### Step 4c: Pull Organic Search Data (if available)
 
 Check if Google Search Console is configured, and pull organic data using the same API-first, CSV-fallback pattern:
 
@@ -132,7 +158,7 @@ audit_path = generate_audit_report(
     days=7,
 )
 
-# Business report — plain English, week-over-week trends, organic data, change attribution
+# Business report — plain English, search terms, organic data, trends
 business_path = generate_business_report(
     campaigns=campaigns, keywords=keywords,
     benchmarks=benchmarks, recommendations=recommendations,
@@ -140,6 +166,8 @@ business_path = generate_business_report(
     organic_queries=organic_queries,
     organic_pages=organic_pages,
     paid_organic_overlaps=paid_organic_overlaps,
+    search_term_analysis=search_term_analysis,
+    negative_candidates=negative_candidates,
 )
 ```
 

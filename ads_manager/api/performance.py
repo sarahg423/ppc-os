@@ -1,8 +1,8 @@
 """Pull performance data from the Google Ads API.
 
-Provides functions to fetch campaign, ad group, keyword, and ad-level
-metrics for a given date range. Returns data as lists of dicts.
-Account ID is read from config — nothing hardcoded.
+Provides functions to fetch campaign, ad group, keyword, ad-level,
+and search term metrics for a given date range. Returns data as lists
+of dicts. Account ID is read from config — nothing hardcoded.
 """
 
 from datetime import date, timedelta
@@ -121,6 +121,49 @@ def get_keyword_performance(campaign_id: Optional[int] = None, days: int = 7) ->
             "cost_per_conversion": m.cost_per_conversion / 1_000_000 if m.cost_per_conversion else None,
         })
     return keywords
+
+
+def get_search_terms_performance(campaign_id: Optional[int] = None, days: int = 7) -> list[dict]:
+    """Get search term report — actual queries that triggered ads.
+
+    This is different from keywords: keywords are what you target,
+    search terms are what people actually typed. The gap between these
+    reveals waste (irrelevant searches) and opportunities (good searches
+    you haven't added as keywords yet).
+    """
+    start, end = _date_range(days)
+    where_clause = f"AND campaign.id = {campaign_id}" if campaign_id else ""
+    query = f"""
+        SELECT campaign.name, ad_group.name,
+            search_term_view.search_term, search_term_view.status,
+            segments.keyword.info.text, segments.keyword.info.match_type,
+            metrics.impressions, metrics.clicks, metrics.ctr,
+            metrics.average_cpc, metrics.cost_micros, metrics.conversions,
+            metrics.cost_per_conversion
+        FROM search_term_view
+        WHERE segments.date BETWEEN '{start}' AND '{end}' {where_clause}
+        ORDER BY metrics.cost_micros DESC
+    """
+    search_terms = []
+    for row in _run_query(query):
+        st, m = row.search_term_view, row.metrics
+        kw_info = row.segments.keyword.info
+        search_terms.append({
+            "campaign_name": row.campaign.name,
+            "ad_group_name": row.ad_group.name,
+            "search_term": st.search_term,
+            "status": st.status.name if st.status else "UNSPECIFIED",
+            "matched_keyword": kw_info.text if kw_info.text else "",
+            "matched_type": kw_info.match_type.name if kw_info.match_type else "",
+            "impressions": m.impressions,
+            "clicks": m.clicks,
+            "ctr": m.ctr,
+            "avg_cpc": m.average_cpc / 1_000_000 if m.average_cpc else 0,
+            "cost": m.cost_micros / 1_000_000,
+            "conversions": m.conversions,
+            "cost_per_conversion": m.cost_per_conversion / 1_000_000 if m.cost_per_conversion else None,
+        })
+    return search_terms
 
 
 def get_ad_performance(campaign_id: Optional[int] = None, days: int = 7) -> list[dict]:

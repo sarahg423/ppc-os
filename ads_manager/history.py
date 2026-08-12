@@ -9,12 +9,19 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
-HISTORY_DIR = Path(__file__).resolve().parent.parent / "data" / "history"
-CHANGES_FILE = HISTORY_DIR / "change_log.json"
+from ads_manager import get_project_root
+
+
+def _history_dir() -> Path:
+    return get_project_root() / "data" / "history"
+
+
+def _changes_file() -> Path:
+    return _history_dir() / "change_log.json"
 
 
 def _ensure_dir():
-    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    _history_dir().mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +46,7 @@ def save_snapshot(
         "totals": _compute_totals(campaigns),
     }
     filename = f"snapshot_{date.today().isoformat()}.json"
-    filepath = HISTORY_DIR / filename
+    filepath = _history_dir() / filename
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, indent=2, default=str)
     return filepath
@@ -85,7 +92,7 @@ def load_previous_snapshot(days: Optional[int] = None) -> Optional[dict]:
     """
     _ensure_dir()
     today = date.today().isoformat()
-    snapshots = sorted(HISTORY_DIR.glob("snapshot_*.json"), reverse=True)
+    snapshots = sorted(_history_dir().glob("snapshot_*.json"), reverse=True)
 
     for path in snapshots:
         # Skip today's snapshot — we want the previous one
@@ -100,7 +107,7 @@ def load_previous_snapshot(days: Optional[int] = None) -> Optional[dict]:
 
 def load_snapshot_by_date(snapshot_date: str) -> Optional[dict]:
     """Load a specific snapshot by date string (YYYY-MM-DD)."""
-    path = HISTORY_DIR / f"snapshot_{snapshot_date}.json"
+    path = _history_dir() / f"snapshot_{snapshot_date}.json"
     if path.exists():
         with open(path, encoding="utf-8") as f:
             return json.load(f)
@@ -141,7 +148,7 @@ def log_change(
     if keywords:
         entry["keywords"] = keywords
     log.append(entry)
-    with open(CHANGES_FILE, "w", encoding="utf-8") as f:
+    with open(_changes_file(), "w", encoding="utf-8") as f:
         json.dump(log, f, indent=2, default=str)
 
 
@@ -152,8 +159,9 @@ def get_changes_since(since_date: str) -> list[dict]:
 
 
 def _load_change_log() -> list[dict]:
-    if CHANGES_FILE.exists():
-        with open(CHANGES_FILE, encoding="utf-8") as f:
+    cf = _changes_file()
+    if cf.exists():
+        with open(cf, encoding="utf-8") as f:
             return json.load(f)
     return []
 

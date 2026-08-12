@@ -14,25 +14,29 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+from ads_manager import get_project_root
 from ads_manager.api.client import load_account_config
 from .client import create_event_post, list_posts, is_gbp_available, GBPClientError
 
 
-POSTED_EVENTS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "gbp_posted_events.json"
+def _posted_events_file() -> Path:
+    return get_project_root() / "data" / "gbp_posted_events.json"
 
 
 def _load_posted_events() -> set:
     """Load the set of event titles+dates already posted."""
-    if POSTED_EVENTS_FILE.exists():
-        with open(POSTED_EVENTS_FILE) as f:
+    pf = _posted_events_file()
+    if pf.exists():
+        with open(pf) as f:
             return set(json.load(f))
     return set()
 
 
 def _save_posted_events(posted: set) -> None:
     """Save the set of posted events."""
-    POSTED_EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(POSTED_EVENTS_FILE, "w") as f:
+    pf = _posted_events_file()
+    pf.parent.mkdir(parents=True, exist_ok=True)
+    with open(pf, "w") as f:
         json.dump(sorted(posted), f, indent=2)
 
 

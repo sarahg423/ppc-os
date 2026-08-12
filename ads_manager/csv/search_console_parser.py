@@ -13,7 +13,11 @@ import csv
 from pathlib import Path
 from typing import Optional
 
-EXPORT_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "exports"
+from ads_manager import get_project_root
+
+
+def _export_dir() -> Path:
+    return get_project_root() / "data" / "exports"
 
 
 def parse_gsc_queries_export(filepath: str | Path) -> list[dict]:
@@ -74,11 +78,12 @@ def list_gsc_exports() -> list[Path]:
     GSC exports typically have 'Queries', 'Pages', or 'Search' in the filename,
     or contain GSC-specific column headers.
     """
-    if not EXPORT_DIR.exists():
+    export_dir = _export_dir()
+    if not export_dir.exists():
         return []
 
     gsc_files = []
-    for f in sorted(EXPORT_DIR.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for f in sorted(export_dir.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True):
         name_lower = f.name.lower()
         if any(hint in name_lower for hint in ["quer", "page", "search_console", "gsc", "organic"]):
             gsc_files.append(f)

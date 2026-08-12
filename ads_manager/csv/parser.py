@@ -8,7 +8,11 @@ import csv
 from pathlib import Path
 from typing import Optional
 
-EXPORT_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "exports"
+from ads_manager import get_project_root
+
+
+def _export_dir() -> Path:
+    return get_project_root() / "data" / "exports"
 
 
 def parse_csv(filepath: str | Path) -> list[dict]:
@@ -113,9 +117,10 @@ def parse_search_terms_export(filepath: str | Path) -> list[dict]:
 
 def list_exports() -> list[Path]:
     """List all CSV files in the exports directory."""
-    if not EXPORT_DIR.exists():
+    export_dir = _export_dir()
+    if not export_dir.exists():
         return []
-    return sorted(EXPORT_DIR.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return sorted(export_dir.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def _to_float(val: str) -> Optional[float]:

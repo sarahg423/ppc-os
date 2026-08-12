@@ -1,0 +1,8 @@
+- [Sarah — BRCC Owner](user_sarah.md) — Co-owner of Blue Ridge Comedy Club, manages ads and online presence
+- [BRCC Google Ads Setup](project_brcc_ads.md) — One campaign, $100/mo, discovery-focused, no memberships promotion
+- [Branch Workflow](feedback_branch_workflow.md) — Always use feature branches, not main directly
+- [Verify External Data](feedback_verify_data.md) — Never use scraped contact info without user confirmation
+- [Scout Monitoring Ads](project_scout_apm.md) — Separate Google Ads account Sarah manages manually (not via ppc-os API)
+- [Ads Editor CSV Syntax](feedback_ads_editor_csv.md) — Campaign column must be literal campaign name, never "All campaigns"
+- [Avoid Em-Dashes](feedback_no_em_dashes.md) — Em-dashes feel AI-generated; rewrite with periods, commas, or parens
+- [Scout Content Rules](feedback_scout_content_rules.md) — Updated posts show both dates, CTAs match language, author must be specified

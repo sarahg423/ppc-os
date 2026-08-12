@@ -12,6 +12,7 @@ import csv
 from pathlib import Path
 from typing import Optional
 
+from ads_manager import get_project_root
 from ads_manager.api.client import get_account_id
 from .validator import (
     ValidationError,
@@ -22,7 +23,9 @@ from .validator import (
     validate_budgets,
 )
 
-OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "imports"
+
+def _output_dir() -> Path:
+    return get_project_root() / "data" / "imports"
 
 
 def _ensure_dir(path: Path) -> None:
@@ -43,7 +46,7 @@ def write_keyword_csv(
     if errors:
         raise ValidationError(errors)
 
-    out = output_dir or OUTPUT_DIR
+    out = output_dir or _output_dir()
     _ensure_dir(out)
     filepath = out / filename
     account = _account_id()
@@ -71,7 +74,7 @@ def write_negative_keyword_csv(
     if errors:
         raise ValidationError(errors)
 
-    out = output_dir or OUTPUT_DIR
+    out = output_dir or _output_dir()
     _ensure_dir(out)
     filepath = out / filename
     account = _account_id()
@@ -105,7 +108,7 @@ def write_rsa_csv(
     if errors:
         raise ValidationError(errors)
 
-    out = output_dir or OUTPUT_DIR
+    out = output_dir or _output_dir()
     _ensure_dir(out)
     filepath = out / filename
     account = _account_id()
@@ -145,7 +148,7 @@ def write_campaign_csv(
     if errors:
         raise ValidationError(errors)
 
-    out = output_dir or OUTPUT_DIR
+    out = output_dir or _output_dir()
     _ensure_dir(out)
     filepath = out / filename
     account = _account_id()
@@ -181,7 +184,7 @@ def write_budget_csv(
     if errors:
         raise ValidationError(errors)
 
-    out = output_dir or OUTPUT_DIR
+    out = output_dir or _output_dir()
     _ensure_dir(out)
     filepath = out / filename
     account = _account_id()

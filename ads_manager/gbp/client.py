@@ -11,8 +11,11 @@ from pathlib import Path
 import requests
 import yaml
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
-CREDENTIALS_PATH = CONFIG_DIR / "credentials.yaml"
+from ads_manager import get_project_root
+
+
+def _config_path(filename: str) -> Path:
+    return get_project_root() / "config" / filename
 
 GBP_API_BASE = "https://mybusiness.googleapis.com/v4"
 
@@ -23,9 +26,10 @@ class GBPClientError(Exception):
 
 def _load_gbp_config() -> dict:
     """Load GBP credentials from config/credentials.yaml."""
-    if not CREDENTIALS_PATH.exists():
-        raise GBPClientError(f"Credentials not found at {CREDENTIALS_PATH}")
-    with open(CREDENTIALS_PATH) as f:
+    path = _config_path("credentials.yaml")
+    if not path.exists():
+        raise GBPClientError(f"Credentials not found at {path}")
+    with open(path) as f:
         config = yaml.safe_load(f)
     gbp = config.get("gbp") or config.get("google_business_profile")
     if not gbp:
@@ -38,7 +42,7 @@ def _load_gbp_config() -> dict:
 
 def _get_access_token() -> str:
     """Get a fresh access token using the refresh token."""
-    with open(CREDENTIALS_PATH) as f:
+    with open(_config_path("credentials.yaml")) as f:
         config = yaml.safe_load(f)
 
     # Use the same OAuth client as Google Ads

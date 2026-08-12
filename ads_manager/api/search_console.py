@@ -11,6 +11,8 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
 
+from ads_manager import get_project_root
+
 try:
     from googleapiclient.discovery import build
     from google.oauth2.credentials import Credentials
@@ -18,9 +20,9 @@ try:
 except ImportError:
     HAS_GSC_API = False
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
-CREDENTIALS_PATH = CONFIG_DIR / "credentials.yaml"
-ACCOUNT_PATH = CONFIG_DIR / "account.yaml"
+
+def _config_path(filename: str) -> Path:
+    return get_project_root() / "config" / filename
 
 
 class GSCClientError(Exception):
@@ -30,12 +32,13 @@ class GSCClientError(Exception):
 
 def _load_gsc_config() -> dict:
     """Load GSC-specific config from credentials.yaml."""
-    if not CREDENTIALS_PATH.exists():
+    path = _config_path("credentials.yaml")
+    if not path.exists():
         raise GSCClientError(
-            f"Credentials file not found at {CREDENTIALS_PATH}. "
+            f"Credentials file not found at {path}. "
             f"Add a 'search_console' section to config/credentials.yaml."
         )
-    with open(CREDENTIALS_PATH) as f:
+    with open(path) as f:
         config = yaml.safe_load(f)
 
     if not config or "search_console" not in config:
@@ -48,9 +51,10 @@ def _load_gsc_config() -> dict:
 
 def _get_site_url() -> str:
     """Get the GSC site URL from account.yaml."""
-    if not ACCOUNT_PATH.exists():
+    path = _config_path("account.yaml")
+    if not path.exists():
         raise GSCClientError("account.yaml not found. Run the getting-started skill first.")
-    with open(ACCOUNT_PATH) as f:
+    with open(path) as f:
         config = yaml.safe_load(f)
     site_url = config.get("search_console", {}).get("site_url")
     if not site_url:

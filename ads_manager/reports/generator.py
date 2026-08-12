@@ -10,6 +10,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
 
+from ads_manager import get_project_root
 from ads_manager.api.client import load_account_config, get_account_id, get_account_name
 from ads_manager.history import (
     save_snapshot, load_previous_snapshot, compare_totals,
@@ -26,7 +27,8 @@ from .human_readable import (
     search_terms_summary, negative_keyword_recommendations,
 )
 
-REPORTS_DIR = Path(__file__).resolve().parent.parent.parent / "reports"
+def _reports_dir() -> Path:
+    return get_project_root() / "reports"
 
 
 def generate_audit_report(
@@ -40,7 +42,7 @@ def generate_audit_report(
     Account name and ID are read from config/account.yaml.
     Also saves a historical snapshot for future trend comparisons.
     """
-    out = output_dir or REPORTS_DIR
+    out = output_dir or _reports_dir()
     out.mkdir(parents=True, exist_ok=True)
 
     account_name = get_account_name()
@@ -90,7 +92,7 @@ def generate_business_report(
     Saves a snapshot and compares against the previous one automatically.
     """
     config = load_account_config()
-    out = output_dir or REPORTS_DIR
+    out = output_dir or _reports_dir()
     out.mkdir(parents=True, exist_ok=True)
 
     account_name = get_account_name()

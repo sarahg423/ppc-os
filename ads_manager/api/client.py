@@ -8,6 +8,8 @@ are read from config/account.yaml — nothing is hardcoded.
 import yaml
 from pathlib import Path
 
+from ads_manager import get_project_root
+
 try:
     from google.ads.googleads.client import GoogleAdsClient
     HAS_API = True
@@ -15,9 +17,8 @@ except ImportError:
     HAS_API = False
 
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
-CREDENTIALS_PATH = CONFIG_DIR / "credentials.yaml"
-ACCOUNT_PATH = CONFIG_DIR / "account.yaml"
+def _config_path(filename: str) -> Path:
+    return get_project_root() / "config" / filename
 
 
 class AdsClientError(Exception):
@@ -31,13 +32,14 @@ def load_account_config() -> dict:
     This is the single source of truth for account ID, brand name,
     benchmarks, ad copy rules, and everything else account-specific.
     """
-    if not ACCOUNT_PATH.exists():
+    path = _config_path("account.yaml")
+    if not path.exists():
         raise FileNotFoundError(
-            f"Account config not found at {ACCOUNT_PATH}. "
+            f"Account config not found at {path}. "
             f"Copy config/account.example.yaml to config/account.yaml "
             f"and customize for your account."
         )
-    with open(ACCOUNT_PATH) as f:
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
@@ -57,13 +59,14 @@ def get_account_name() -> str:
 
 def load_credentials() -> dict:
     """Load API credentials from config/credentials.yaml."""
-    if not CREDENTIALS_PATH.exists():
+    path = _config_path("credentials.yaml")
+    if not path.exists():
         raise AdsClientError(
-            f"Credentials file not found at {CREDENTIALS_PATH}. "
+            f"Credentials file not found at {path}. "
             f"Copy config/credentials.example.yaml to config/credentials.yaml "
             f"and fill in your values."
         )
-    with open(CREDENTIALS_PATH) as f:
+    with open(path) as f:
         config = yaml.safe_load(f)
 
     if not config or "google_ads" not in config:
